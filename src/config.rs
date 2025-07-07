@@ -1,215 +1,158 @@
 /*!
- * CLI Configuration Management
- *
- * Handles loading, saving, and managing CLI configuration.
+ * Client Configuration
+ * 
+ * Configuration for the HTTP client connection to lmoserver.
  */
 
-use std::path::PathBuf;
-use anyhow::{Context, Result};
+use crate::error::{ClientError, ClientResult};
 use serde::{Deserialize, Serialize};
-use dirs::config_dir;
+use std::time::Duration;
+use url::Url;
 
-use crate::error::CliError;
-
+/// Client configuration for connecting to the lmoserver
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CliConfig {
-    /// Default server URL
+pub struct ClientConfig {
+    /// Server URL (e.g., "http://localhost:3000")
     pub server_url: String,
     
-    /// Default output format
-    pub output_format: String,
+    /// Request timeout
+    pub timeout: Duration,
     
-    /// Enable colors by default
-    pub enable_colors: bool,
+    /// User agent string
+    pub user_agent: String,
     
-    /// Default chat settings
-    pub chat: ChatConfig,
+    /// API key for authentication (optional)
+    pub api_key: Option<String>,
     
-    /// Default model settings
-    pub models: ModelsConfig,
+    /// Maximum number of retries for failed requests
+    pub max_retries: usize,
+    
+    /// Delay between retries
+    pub retry_delay: Duration,
+    
+    /// Enable request/response logging
+    pub enable_logging: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChatConfig {
-    /// Default temperature
-    pub temperature: f32,
-    
-    /// Default max tokens
-    pub max_tokens: u32,
-    
-    /// Enable streaming by default
-    pub stream: bool,
-    
-    /// Default system prompt
-    pub system_prompt: Option<String>,
-    
-    /// Auto-save conversations
-    pub auto_save: bool,
-    
-    /// Conversation history directory
-    pub history_dir: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ModelsConfig {
-    /// Default search limit
-    pub default_limit: u32,
-    
-    /// Default sort field
-    pub default_sort: String,
-    
-    /// Default sort direction
-    pub default_direction: String,
-    
-    /// Preferred model providers
-    pub preferred_providers: Vec<String>,
-}
-
-impl Default for CliConfig {
+impl Default for ClientConfig {
     fn default() -> Self {
         Self {
             server_url: "http://localhost:3000".to_string(),
-            output_format: "table".to_string(),
-            enable_colors: true,
-            chat: ChatConfig {
-                temperature: 0.7,
-                max_tokens: 1000,
-                stream: true,
-                system_prompt: None,
-                auto_save: false,
-                history_dir: None,
-            },
-            models: ModelsConfig {
-                default_limit: 20,
-                default_sort: "downloads".to_string(),
-                default_direction: "desc".to_string(),
-                preferred_providers: vec![
-                    "microsoft".to_string(),
-                    "meta-llama".to_string(),
-                    "huggingface".to_string(),
-                ],
-            },
+            timeout: Duration::from_secs(30),
+            user_agent: format!("lmoclient/{}", env!("CARGO_PKG_VERSION")),
+            api_key: None,
+            max_retries: 3,
+            retry_delay: Duration::from_millis(1000),
+            enable_logging: true,
         }
     }
 }
 
-impl CliConfig {
-    /// Load configuration from file or create default
-    pub fn load() -> Result<Self> {
-        let config_path = Self::config_file_path()?;
+impl ClientConfig {
+    /// Create a new configuration with the specified server URL
+    pub fn new<S: Into<String>>(server_url: S) -> ClientResult<Self> {
+        let mut config = Self::default();
+        config.server_url = server_url.into();
+        config.validate()?;
+        Ok(config)
+    }
+
+    /// Validate the configuration
+    pub fn validate(&self) -> ClientResult<()> {
+        // Validate server URL
+        Url::parse(&self.server_url)
+            .map_err(|e| ClientError::ConfigError(format!("Invalid server URL: {}", e)))?;
+
+        // Validate timeout
+        if self.timeout.as_secs() == 0 {
+            return Err(ClientError::ConfigError("Timeout must be greater than 0".to_string()));
+        }
+
+        // Validate retry settings
+        if self.max_retries > 10 {
+            return Err(ClientError::ConfigError("Max retries cannot exceed 10".to_string()));
+        }
+
+        Ok(())
+    }
+
+    /// Build the full API URL for an endpoint
+    pub fn api_url<S: AsRef<str>>(&self, endpoint: S) -> ClientResult<String> {
+        let base = self.server_url.trim_end_matches('/');
+        let endpoint = endpoint.as_ref().trim_start_matches('/');
         
-        if config_path.exists() {
-            let content = std::fs::read_to_string(&config_path)
-                .with_context(|| format!("Failed to read config file: {}", config_path.display()))?;
-            
-            toml::from_str(&content)
-                .with_context(|| "Failed to parse config file")
+        if endpoint.is_empty() {
+            Ok(base.to_string())
         } else {
-            Ok(Self::default())
+            Ok(format!("{}/{}", base, endpoint))
         }
     }
 
-    /// Save configuration to file
-    pub fn save(&self) -> Result<()> {
-        let config_path = Self::config_file_path()?;
-        
-        // Create config directory if it doesn't exist
-        if let Some(parent) = config_path.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
-        }
-        
-        let content = toml::to_string_pretty(self)
-            .with_context(|| "Failed to serialize config")?;
-        
-        std::fs::write(&config_path, content)
-            .with_context(|| format!("Failed to write config file: {}", config_path.display()))?;
-        
-        Ok(())
+    /// Set API key for authentication
+    pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
+        self.api_key = Some(api_key.into());
+        self
     }
 
-    /// Get the configuration file path
-    pub fn config_file_path() -> Result<PathBuf> {
-        let config_dir = config_dir()
-            .ok_or_else(|| CliError::ConfigError("Could not find config directory".to_string()))?;
+    /// Set request timeout
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    /// Enable or disable logging
+    pub fn with_logging(mut self, enable: bool) -> Self {
+        self.enable_logging = enable;
+        self
+    }
+}
+
+/// Server endpoint definitions
+pub struct Endpoints;
+
+impl Endpoints {
+    pub const HEALTH: &'static str = "v1/health";
+    pub const MODELS_LIST: &'static str = "v1/models";
+    pub const MODELS_LOAD: &'static str = "v1/models/load";
+    pub const MODELS_UNLOAD: &'static str = "v1/models/unload";
+    pub const MODELS_LOADED: &'static str = "v1/models/loaded";
+    pub const MODELS_STATUS: &'static str = "v1/models/status";
+    pub const CHAT_COMPLETIONS: &'static str = "v1/chat/completions";
+    pub const CHAT_COMPLETIONS_STREAM: &'static str = "v1/chat/completions/stream";
+}
+
+/// Server endpoint type for compatibility
+pub type ServerEndpoint = &'static str;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = ClientConfig::default();
+        assert!(config.validate().is_ok());
+        assert_eq!(config.server_url, "http://localhost:3000");
+    }
+
+    #[test]
+    fn test_api_url_building() {
+        let config = ClientConfig::default();
         
-        Ok(config_dir.join("lmo").join("config.toml"))
+        assert_eq!(
+            config.api_url("v1/models").unwrap(),
+            "http://localhost:3000/v1/models"
+        );
+        
+        assert_eq!(
+            config.api_url("/v1/health").unwrap(),
+            "http://localhost:3000/v1/health"
+        );
     }
 
-    /// Get server URL with fallback
-    pub fn server_url<'a>(&'a self, override_url: Option<&'a str>) -> &'a str {
-        override_url.unwrap_or(&self.server_url)
-    }
-
-    /// Set a configuration value by key
-    pub fn set_value(&mut self, key: &str, value: &str) -> Result<()> {
-        match key {
-            "server_url" => self.server_url = value.to_string(),
-            "output_format" => self.output_format = value.to_string(),
-            "enable_colors" => self.enable_colors = value.parse()
-                .with_context(|| "Invalid boolean value for enable_colors")?,
-            "chat.temperature" => self.chat.temperature = value.parse()
-                .with_context(|| "Invalid float value for chat.temperature")?,
-            "chat.max_tokens" => self.chat.max_tokens = value.parse()
-                .with_context(|| "Invalid integer value for chat.max_tokens")?,
-            "chat.stream" => self.chat.stream = value.parse()
-                .with_context(|| "Invalid boolean value for chat.stream")?,
-            "chat.system_prompt" => self.chat.system_prompt = if value.is_empty() { 
-                None 
-            } else { 
-                Some(value.to_string()) 
-            },
-            "chat.auto_save" => self.chat.auto_save = value.parse()
-                .with_context(|| "Invalid boolean value for chat.auto_save")?,
-            "chat.history_dir" => self.chat.history_dir = if value.is_empty() { 
-                None 
-            } else { 
-                Some(value.to_string()) 
-            },
-            "models.default_limit" => self.models.default_limit = value.parse()
-                .with_context(|| "Invalid integer value for models.default_limit")?,
-            "models.default_sort" => self.models.default_sort = value.to_string(),
-            "models.default_direction" => self.models.default_direction = value.to_string(),
-            _ => return Err(CliError::ConfigError(format!("Unknown config key: {}", key)).into()),
-        }
-        Ok(())
-    }
-
-    /// Get a configuration value by key
-    pub fn get_value(&self, key: &str) -> Result<String> {
-        let value = match key {
-            "server_url" => self.server_url.clone(),
-            "output_format" => self.output_format.clone(),
-            "enable_colors" => self.enable_colors.to_string(),
-            "chat.temperature" => self.chat.temperature.to_string(),
-            "chat.max_tokens" => self.chat.max_tokens.to_string(),
-            "chat.stream" => self.chat.stream.to_string(),
-            "chat.system_prompt" => self.chat.system_prompt.as_deref().unwrap_or("").to_string(),
-            "chat.auto_save" => self.chat.auto_save.to_string(),
-            "chat.history_dir" => self.chat.history_dir.as_deref().unwrap_or("").to_string(),
-            "models.default_limit" => self.models.default_limit.to_string(),
-            "models.default_sort" => self.models.default_sort.clone(),
-            "models.default_direction" => self.models.default_direction.clone(),
-            _ => return Err(CliError::ConfigError(format!("Unknown config key: {}", key)).into()),
-        };
-        Ok(value)
-    }
-
-    /// List all configuration keys
-    pub fn list_keys() -> Vec<&'static str> {
-        vec![
-            "server_url",
-            "output_format",
-            "enable_colors",
-            "chat.temperature",
-            "chat.max_tokens",
-            "chat.stream",
-            "chat.system_prompt",
-            "chat.auto_save",
-            "chat.history_dir",
-            "models.default_limit",
-            "models.default_sort",
-            "models.default_direction",
-        ]
+    #[test]
+    fn test_invalid_url() {
+        let result = ClientConfig::new("not-a-url");
+        assert!(result.is_err());
     }
 }
