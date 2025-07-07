@@ -16,7 +16,7 @@ use crate::models::{
 use crate::streaming::ChatCompletionStream;
 
 // Re-export server types
-use lmoserver::shared_types::{ChatCompletionRequest, ChatCompletionResponse};
+use lmoserver::shared_types::{ChatCompletionRequest, ChatCompletionResponse, ModelInfo};
 
 /// Main HTTP client for LMOxide server
 #[derive(Debug, Clone)]
@@ -91,10 +91,18 @@ impl LmoClient {
         let url = self.config.api_url(Endpoints::MODELS_LIST)?;
         let response = self.make_request(reqwest::Method::GET, url, None::<&()>).await?;
         
-        let models: ModelListResponse = response.json().await?;
-        info!("Listed {} models", models.models.len());
+        // The server returns a simple array of ModelInfo, not a wrapped response
+        let models: Vec<ModelInfo> = response.json().await?;
+        info!("Listed {} models", models.len());
         
-        Ok(models)
+        // Wrap in our response structure for consistency
+        let response = ModelListResponse {
+            models: models.clone(),
+            total: Some(models.len() as u32),
+            has_more: false, // We don't have pagination info from server
+        };
+        
+        Ok(response)
     }
 
     /// Load a model
