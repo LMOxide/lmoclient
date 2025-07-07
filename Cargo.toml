@@ -1,8 +1,8 @@
 [package]
-name = "lmoclient"
+name = "lmo"
 version = "0.1.0"
 edition = "2024"
-description = "HTTP client library for LMOxide server communication"
+description = "CLI for LMOxide server"
 license = "MIT OR Apache-2.0"
 
 # Use as both a library and example binary
