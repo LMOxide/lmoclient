@@ -1,28 +1,19 @@
 [package]
-name = "lmoclient"
+name = "lmo"
 version = "0.1.0"
-edition = "2024"
-description = "HTTP client library for LMOxide server communication"
+edition = "2021"
+description = "LMOxide CLI - Command-line interface for model management and chat completions"
 license = "MIT OR Apache-2.0"
 
-# Use as both a library and example binary
-[[bin]]
-name = "lmoclient"
-path = "src/main.rs"
-
-[lib]
-name = "lmoclient"
-path = "src/lib.rs"
-
 [dependencies]
-# HTTP client
-reqwest = { version = "0.12", features = ["json", "stream"] }
-tokio = { version = "1.0", features = ["full"] }
-tokio-stream = "0.1"
+# CLI framework
+clap = { version = "4.0", features = ["derive", "env", "color"] }
 
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# HTTP client library
+lmoclient = { path = "../lmoclient" }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
 
 # Error handling
 anyhow = "1.0"
@@ -30,10 +21,25 @@ thiserror = "1.0"
 
 # Logging
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# URL handling
+# Serialization for config files
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+toml = "0.8"
+
+# Terminal UI
+console = "0.15"
+indicatif = "0.17"
+colored = "2.0"
+
+# Input/output
+dialoguer = "0.11"
+
+# Configuration management
+dirs = "5.0"
 url = "2.5"
 
-# Server types (re-use from lmoserver)
-lmoserver = { path = "../lmoserver", default-features = false }
+# Terminal interaction for streaming
+crossterm = "0.27"
