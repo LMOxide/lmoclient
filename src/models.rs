@@ -84,6 +84,30 @@ pub struct ModelStatusInfo {
     pub loaded_at: String,
 }
 
+/// Download model request
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DownloadModelRequest {
+    pub model_name: String,
+    pub format_hint: Option<String>,
+    pub force_redownload: bool,
+    pub custom_directory: Option<String>,
+}
+
+/// Download model response
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DownloadModelResponse {
+    pub success: bool,
+    pub message: String,
+    pub model_name: String,
+    pub model_id: Option<String>,
+    pub download_path: Option<String>,
+    pub detected_format: Option<String>,
+    pub size_bytes: Option<u64>,
+    pub duration_ms: Option<u64>,
+    pub error_details: Option<String>,
+    pub metadata: Option<HashMap<String, serde_json::Value>>,
+}
+
 /// Chat request builder for convenient API usage
 pub struct ChatRequestBuilder {
     request: ChatCompletionRequest,

@@ -10,8 +10,9 @@ use tracing::{debug, info, warn};
 use crate::config::{ClientConfig, Endpoints};
 use crate::error::{ClientError, ClientResult};
 use crate::models::{
-    ChatRequestBuilder, HealthInfo, LoadModelRequest, LoadModelResponse,
-    ModelListResponse, ModelStatusInfo, UnloadModelRequest, UnloadModelResponse,
+    ChatRequestBuilder, DownloadModelRequest, DownloadModelResponse, HealthInfo, 
+    LoadModelRequest, LoadModelResponse, ModelListResponse, ModelStatusInfo, 
+    UnloadModelRequest, UnloadModelResponse,
 };
 use crate::streaming::ChatCompletionStream;
 
@@ -182,6 +183,35 @@ impl LmoClient {
         info!("Found {} loaded models", models.len());
         
         Ok(models)
+    }
+
+    /// Download a model from a remote repository
+    pub async fn download_model(&self, request: DownloadModelRequest) -> ClientResult<DownloadModelResponse> {
+        info!("Downloading model: {}", request.model_name);
+        
+        let url = self.config.api_url(Endpoints::MODELS_DOWNLOAD)?;
+        let response = self.make_request(reqwest::Method::POST, url, Some(&request)).await?;
+        
+        let download_response: DownloadModelResponse = response.json().await?;
+        
+        if download_response.success {
+            let size_mb = download_response.size_bytes
+                .map(|b| b / 1024 / 1024)
+                .unwrap_or(0);
+            let duration = download_response.duration_ms.unwrap_or(0);
+            info!(
+                "Model downloaded successfully: {} ({}ms, {}MB)", 
+                download_response.model_name,
+                duration,
+                size_mb
+            );
+        } else {
+            warn!("Model download failed: {} - {}", 
+                download_response.model_name, 
+                download_response.message);
+        }
+        
+        Ok(download_response)
     }
 
     /// Create a chat completion (non-streaming)

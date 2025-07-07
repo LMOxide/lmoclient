@@ -117,6 +117,7 @@ impl Endpoints {
     pub const MODELS_UNLOAD: &'static str = "v1/models/unload";
     pub const MODELS_LOADED: &'static str = "v1/models/loaded";
     pub const MODELS_STATUS: &'static str = "v1/models/status";
+    pub const MODELS_DOWNLOAD: &'static str = "v1/models/download";
     pub const CHAT_COMPLETIONS: &'static str = "v1/chat/completions";
     pub const CHAT_COMPLETIONS_STREAM: &'static str = "v1/chat/completions/stream";
 }
