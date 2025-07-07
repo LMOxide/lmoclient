@@ -11,21 +11,20 @@ use dirs::config_dir;
 
 use crate::error::CliError;
 
-/// Client configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CliConfig {
     /// Default server URL
     pub server_url: String,
-
+    
     /// Default output format
     pub output_format: String,
-
+    
     /// Enable colors by default
     pub enable_colors: bool,
-
+    
     /// Default chat settings
     pub chat: ChatConfig,
-
+    
     /// Default model settings
     pub models: ModelsConfig,
 }
@@ -34,19 +33,19 @@ pub struct CliConfig {
 pub struct ChatConfig {
     /// Default temperature
     pub temperature: f32,
-
+    
     /// Default max tokens
     pub max_tokens: u32,
-
+    
     /// Enable streaming by default
     pub stream: bool,
-
+    
     /// Default system prompt
     pub system_prompt: Option<String>,
-
+    
     /// Auto-save conversations
     pub auto_save: bool,
-
+    
     /// Conversation history directory
     pub history_dir: Option<String>,
 }
@@ -55,13 +54,13 @@ pub struct ChatConfig {
 pub struct ModelsConfig {
     /// Default search limit
     pub default_limit: u32,
-
+    
     /// Default sort field
     pub default_sort: String,
-
+    
     /// Default sort direction
     pub default_direction: String,
-
+    
     /// Preferred model providers
     pub preferred_providers: Vec<String>,
 }
@@ -98,11 +97,11 @@ impl CliConfig {
     /// Load configuration from file or create default
     pub fn load() -> Result<Self> {
         let config_path = Self::config_file_path()?;
-
+        
         if config_path.exists() {
             let content = std::fs::read_to_string(&config_path)
                 .with_context(|| format!("Failed to read config file: {}", config_path.display()))?;
-
+            
             toml::from_str(&content)
                 .with_context(|| "Failed to parse config file")
         } else {
@@ -113,19 +112,19 @@ impl CliConfig {
     /// Save configuration to file
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_file_path()?;
-
+        
         // Create config directory if it doesn't exist
         if let Some(parent) = config_path.parent() {
             std::fs::create_dir_all(parent)
                 .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
         }
-
+        
         let content = toml::to_string_pretty(self)
             .with_context(|| "Failed to serialize config")?;
-
+        
         std::fs::write(&config_path, content)
             .with_context(|| format!("Failed to write config file: {}", config_path.display()))?;
-
+        
         Ok(())
     }
 
@@ -133,7 +132,7 @@ impl CliConfig {
     pub fn config_file_path() -> Result<PathBuf> {
         let config_dir = config_dir()
             .ok_or_else(|| CliError::ConfigError("Could not find config directory".to_string()))?;
-
+        
         Ok(config_dir.join("lmo").join("config.toml"))
     }
 
@@ -155,17 +154,17 @@ impl CliConfig {
                 .with_context(|| "Invalid integer value for chat.max_tokens")?,
             "chat.stream" => self.chat.stream = value.parse()
                 .with_context(|| "Invalid boolean value for chat.stream")?,
-            "chat.system_prompt" => self.chat.system_prompt = if value.is_empty() {
-                None
-            } else {
-                Some(value.to_string())
+            "chat.system_prompt" => self.chat.system_prompt = if value.is_empty() { 
+                None 
+            } else { 
+                Some(value.to_string()) 
             },
             "chat.auto_save" => self.chat.auto_save = value.parse()
                 .with_context(|| "Invalid boolean value for chat.auto_save")?,
-            "chat.history_dir" => self.chat.history_dir = if value.is_empty() {
-                None
-            } else {
-                Some(value.to_string())
+            "chat.history_dir" => self.chat.history_dir = if value.is_empty() { 
+                None 
+            } else { 
+                Some(value.to_string()) 
             },
             "models.default_limit" => self.models.default_limit = value.parse()
                 .with_context(|| "Invalid integer value for models.default_limit")?,
@@ -173,26 +172,8 @@ impl CliConfig {
             "models.default_direction" => self.models.default_direction = value.to_string(),
             _ => return Err(CliError::ConfigError(format!("Unknown config key: {}", key)).into()),
         }
-
-        // Validate retries
-        if self.max_retries > 10 {
-            return Err(ClientError::ConfigError("Max retries should not exceed 10".to_string()));
-        }
-
         Ok(())
     }
-}
-
-/// Server endpoint information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ServerEndpoint {
-    /// Endpoint path
-    pub path: String,
-    /// HTTP method
-    pub method: String,
-    /// Description
-    pub description: Option<String>,
-}
 
     /// Get a configuration value by key
     pub fn get_value(&self, key: &str) -> Result<String> {

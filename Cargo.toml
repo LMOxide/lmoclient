@@ -1,24 +1,19 @@
 [package]
 name = "lmo"
 version = "0.1.0"
-edition = "2024"
-description = "CLI for LMOxide server"
+edition = "2021"
+description = "LMOxide CLI - Command-line interface for model management and chat completions"
 license = "MIT OR Apache-2.0"
 
-# Use as both a library and example binary
-[[bin]]
-name = "lmoclient"
-path = "src/main.rs"
-
-[lib]
-name = "lmoclient"
-path = "src/lib.rs"
-
 [dependencies]
-# HTTP client
-reqwest = { version = "0.12", features = ["json", "stream"] }
+# CLI framework
+clap = { version = "4.0", features = ["derive", "env", "color"] }
+
+# HTTP client library
+lmoclient = { path = "../lmoclient" }
+
+# Async runtime
 tokio = { version = "1.0", features = ["full"] }
-tokio-stream = "0.1"
 
 # Error handling
 anyhow = "1.0"
@@ -26,15 +21,7 @@ thiserror = "1.0"
 
 # Logging
 tracing = "0.1"
-tracing-subscriber = "0.3"
-
-# Server types (re-use from lmoserver)
-lmoserver = { path = "../lmoserver", default-features = false }
-# CLI framework
-clap = { version = "4.0", features = ["derive", "env", "color"] }
-
-# HTTP client library
-lmoclient = { path = "../lmoclient" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Serialization for config files
 serde = { version = "1.0", features = ["derive"] }

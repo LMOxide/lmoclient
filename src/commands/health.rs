@@ -8,8 +8,7 @@ use anyhow::Result;
 use crate::cli::HealthCommand;
 use crate::config::CliConfig;
 use crate::output::{OutputFormatter, format_bytes};
-use crate::utils::format_duration;
-use crate::utils::create_client;
+use crate::utils::{create_client, format_duration};
 
 pub async fn handle(cmd: HealthCommand, config: &CliConfig) -> Result<()> {
     let output = OutputFormatter::new(config, None, false);
