@@ -5,6 +5,7 @@
  */
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // Re-export server types for convenience
 pub use lmoserver::shared_types::{ChatCompletionRequest, ChatCompletionResponse, ModelInfo};
@@ -40,16 +41,20 @@ pub struct LoadModelConfig {
     pub max_memory_gb: Option<f32>,
     pub gpu_layers: Option<u32>,
     pub context_size: Option<u32>,
+    pub force_reload: bool,
 }
 
 /// Load model response
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoadModelResponse {
     pub success: bool,
+    pub message: String,
     pub model_id: String,
     pub instance_id: Option<String>,
-    pub load_time_ms: u64,
-    pub memory_usage_bytes: u64,
+    pub status: Option<serde_json::Value>, // ModelStatus from server
+    pub duration_ms: Option<u64>,
+    pub memory_usage_bytes: Option<u64>,
+    pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Unload model request
@@ -62,9 +67,11 @@ pub struct UnloadModelRequest {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnloadModelResponse {
     pub success: bool,
+    pub message: String,
     pub model_id: String,
     pub instance_id: String,
     pub memory_freed_bytes: u64,
+    pub duration_ms: u64,
 }
 
 /// Model status information

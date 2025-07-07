@@ -115,14 +115,20 @@ impl LmoClient {
         let load_response: LoadModelResponse = response.json().await?;
         
         if load_response.success {
+            let duration = load_response.duration_ms.unwrap_or(0);
+            let memory_mb = load_response.memory_usage_bytes
+                .map(|b| b / 1024 / 1024)
+                .unwrap_or(0);
             info!(
                 "Model loaded successfully: {} ({}ms, {}MB)", 
                 load_response.model_id,
-                load_response.load_time_ms,
-                load_response.memory_usage_bytes / 1024 / 1024
+                duration,
+                memory_mb
             );
         } else {
-            warn!("Model loading reported failure: {}", load_response.model_id);
+            warn!("Model loading failed: {} - {}", 
+                load_response.model_id, 
+                load_response.message);
         }
         
         Ok(load_response)
@@ -144,7 +150,9 @@ impl LmoClient {
                 unload_response.memory_freed_bytes / 1024 / 1024
             );
         } else {
-            warn!("Model unloading reported failure: {}", unload_response.model_id);
+            warn!("Model unloading failed: {} - {}", 
+                unload_response.model_id, 
+                unload_response.message);
         }
         
         Ok(unload_response)
