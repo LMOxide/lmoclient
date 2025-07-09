@@ -6,6 +6,7 @@
 
 pub mod client;
 pub mod config;
+pub mod download;
 pub mod error;
 pub mod models;
 pub mod streaming;
@@ -17,3 +18,6 @@ pub use error::{ClientError, ClientResult};
 
 // Re-export model types
 pub use models::*;
+
+// Re-export download types
+pub use download::DownloadProgressStream;

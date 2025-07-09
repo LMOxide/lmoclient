@@ -59,12 +59,12 @@ impl ChatCompletionStream {
                         if let Some(json_end) = text.rfind('}') {
                             let json_str = &text[json_start..=json_end];
                             serde_json::from_str::<ChatCompletionChunk>(json_str)
-                                .map_err(|e| ClientError::ParseError(format!("Failed to parse chunk: {}", e)))
+                                .map_err(|e| ClientError::JsonParseError(e))
                         } else {
-                            Err(ClientError::ParseError("No JSON end found".to_string()))
+                            Err(ClientError::InvalidResponse("No JSON end found".to_string()))
                         }
                     } else {
-                        Err(ClientError::ParseError("No JSON start found".to_string()))
+                        Err(ClientError::InvalidResponse("No JSON start found".to_string()))
                     }
                 }
                 Err(e) => Err(ClientError::HttpError(e)),

@@ -185,11 +185,11 @@ impl LmoClient {
         Ok(models)
     }
 
-    /// Download a model from a remote repository
+    /// Download a model from a remote repository (legacy synchronous method)
     pub async fn download_model(&self, request: DownloadModelRequest) -> ClientResult<DownloadModelResponse> {
-        info!("Downloading model: {}", request.model_name);
+        info!("Downloading model (legacy): {}", request.model_name);
         
-        let url = self.config.api_url(Endpoints::MODELS_DOWNLOAD)?;
+        let url = self.config.api_url(Endpoints::MODELS_DOWNLOAD_LEGACY)?;
         let response = self.make_request(reqwest::Method::POST, url, Some(&request)).await?;
         
         let download_response: DownloadModelResponse = response.json().await?;
@@ -247,7 +247,7 @@ impl LmoClient {
     }
 
     /// Make a JSON HTTP request with error handling and retries
-    async fn make_request<T: serde::Serialize, U: reqwest::IntoUrl>(
+    pub(crate) async fn make_request<T: serde::Serialize, U: reqwest::IntoUrl>(
         &self,
         method: reqwest::Method,
         url: U,

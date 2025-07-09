@@ -15,8 +15,6 @@ pub enum ClientError {
     #[error("HTTP request failed: {0}")]
     HttpError(#[from] reqwest::Error),
 
-    #[error("JSON parsing failed: {0}")]
-    ParseError(String),
 
     #[error("Configuration error: {0}")]
     ConfigError(String),
@@ -41,6 +39,15 @@ pub enum ClientError {
 
     #[error("Invalid response format: {0}")]
     InvalidResponse(String),
+
+    #[error("Stream error: {0}")]
+    StreamError(String),
+
+    #[error("Stream event: {0}")]
+    StreamEvent(String),
+
+    #[error("JSON parsing failed: {0}")]
+    JsonParseError(#[from] serde_json::Error),
 }
 
 impl ClientError {
@@ -74,11 +81,6 @@ impl ClientError {
     }
 }
 
-impl From<serde_json::Error> for ClientError {
-    fn from(err: serde_json::Error) -> Self {
-        Self::ParseError(err.to_string())
-    }
-}
 
 impl From<url::ParseError> for ClientError {
     fn from(err: url::ParseError) -> Self {

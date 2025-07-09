@@ -118,8 +118,19 @@ impl Endpoints {
     pub const MODELS_LOADED: &'static str = "v1/models/loaded";
     pub const MODELS_STATUS: &'static str = "v1/models/status";
     pub const MODELS_DOWNLOAD: &'static str = "v1/models/download";
+    pub const MODELS_DOWNLOAD_LEGACY: &'static str = "v1/models/download/legacy";
     pub const CHAT_COMPLETIONS: &'static str = "v1/chat/completions";
     pub const CHAT_COMPLETIONS_STREAM: &'static str = "v1/chat/completions/stream";
+    
+    /// Get download progress SSE endpoint for a specific download ID
+    pub fn download_progress_sse(download_id: &str) -> String {
+        format!("v1/models/download/{}/progress", download_id)
+    }
+    
+    /// Get download control endpoint for a specific download ID
+    pub fn download_control(download_id: &str) -> String {
+        format!("v1/models/download/{}/control", download_id)
+    }
 }
 
 /// Server endpoint type for compatibility

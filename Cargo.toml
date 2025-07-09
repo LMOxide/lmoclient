@@ -30,3 +30,6 @@ url = "2.5"
 
 # Async streaming support
 futures = "0.3"
+
+# Async streaming support for SSE
+async-stream = "0.3"

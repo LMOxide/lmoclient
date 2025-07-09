@@ -108,6 +108,13 @@ pub struct DownloadModelResponse {
     pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
+// Re-export SSE download types from server
+pub use lmoserver::download::{
+    StartDownloadResponse, DownloadControlRequest, DownloadControlResponse,
+    DownloadEvent, DownloadEventType, DownloadState, DownloadProgress,
+    DownloadId
+};
+
 /// Chat request builder for convenient API usage
 pub struct ChatRequestBuilder {
     request: ChatCompletionRequest,
