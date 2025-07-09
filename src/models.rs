@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 // Re-export server types for convenience
 pub use lmoserver::shared_types::{ChatCompletionRequest, ChatCompletionResponse, ModelInfo};
@@ -16,6 +17,30 @@ pub struct ModelListResponse {
     pub models: Vec<ModelInfo>,
     pub total: Option<u32>,
     pub has_more: bool,
+}
+
+/// Information about a locally downloaded/cached model
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LocalModelInfo {
+    /// Path to the model file
+    pub path: PathBuf,
+    /// Filename of the model
+    pub filename: String,
+    /// Size of the model file in bytes
+    pub size_bytes: u64,
+    /// When the file was last modified
+    pub last_modified: chrono::DateTime<chrono::Utc>,
+    /// Whether this model file is currently loaded in memory
+    pub is_loaded: bool,
+}
+
+/// Response wrapper for local model list operations
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LocalModelsResponse {
+    pub success: bool,
+    pub models: Vec<LocalModelInfo>,
+    pub total_count: usize,
+    pub total_size_bytes: u64,
 }
 
 /// Health check information

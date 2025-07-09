@@ -12,7 +12,7 @@ use crate::error::{ClientError, ClientResult};
 use crate::models::{
     ChatRequestBuilder, DownloadModelRequest, DownloadModelResponse, HealthInfo, 
     LoadModelRequest, LoadModelResponse, ModelListResponse, ModelStatusInfo, 
-    UnloadModelRequest, UnloadModelResponse,
+    UnloadModelRequest, UnloadModelResponse, LocalModelsResponse,
 };
 use crate::streaming::ChatCompletionStream;
 
@@ -104,6 +104,19 @@ impl LmoClient {
         };
         
         Ok(response)
+    }
+
+    /// List local models
+    pub async fn list_local_models(&self) -> ClientResult<LocalModelsResponse> {
+        debug!("Listing local models");
+        
+        let url = self.config.api_url(Endpoints::MODELS_LIST_LOCAL)?;
+        let response = self.make_request(reqwest::Method::GET, url, None::<&()>).await?;
+        
+        let local_models: LocalModelsResponse = response.json().await?;
+        info!("Listed {} local models", local_models.models.len());
+        
+        Ok(local_models)
     }
 
     /// Load a model

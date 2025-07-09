@@ -113,6 +113,7 @@ pub struct Endpoints;
 impl Endpoints {
     pub const HEALTH: &'static str = "v1/health";
     pub const MODELS_LIST: &'static str = "v1/models";
+    pub const MODELS_LIST_LOCAL: &'static str = "v1/models/local";
     pub const MODELS_LOAD: &'static str = "v1/models/load";
     pub const MODELS_UNLOAD: &'static str = "v1/models/unload";
     pub const MODELS_LOADED: &'static str = "v1/models/loaded";
