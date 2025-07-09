@@ -30,6 +30,8 @@ pub struct LocalModelInfo {
     pub size_bytes: u64,
     /// When the file was last modified
     pub last_modified: chrono::DateTime<chrono::Utc>,
+    /// Extracted metadata (if available)
+    pub metadata: Option<serde_json::Value>,
     /// Whether this model file is currently loaded in memory
     pub is_loaded: bool,
 }
